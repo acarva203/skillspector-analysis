@@ -3,6 +3,7 @@ import { Scanner } from "@/components/scanner"
 
 const CATEGORIES = [
   "Prompt Injection",
+  "Anti-Refusal",
   "Data Exfiltration",
   "Privilege Escalation",
   "Supply Chain",
@@ -46,7 +47,7 @@ export default function Page() {
         <section className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-safe" />
-            Static analysis · 64 patterns · 16 categories
+            Static analysis · 67 patterns · 17 categories
           </span>
           <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
             Is this AI agent skill safe to install?
