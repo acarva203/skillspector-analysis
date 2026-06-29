@@ -1,3 +1,5 @@
+import type { RepoMeta } from "./types"
+
 export interface RepoFile {
   path: string
   content: string
@@ -9,6 +11,9 @@ export interface RepoInfo {
   repo: string
   branch: string
   files: RepoFile[]
+  /** Every path in the repo tree (not just scanned files) — used for trust signals. */
+  allPaths: string[]
+  meta: RepoMeta
   truncated: boolean
 }
 
@@ -18,11 +23,12 @@ const MAX_FILE_BYTES = 400_000
 // Extensions / filenames we care about for static analysis.
 const TEXT_EXTENSIONS = new Set([
   "py","js","ts","tsx","jsx","sh","bash","rb","go","md","txt","json",
-  "yaml","yml","toml","cfg","ini","php","pl","ps1","env","mjs","cjs",
+  "yaml","yml","toml","cfg","ini","php","pl","ps1","env","mjs","cjs","lock",
 ])
 const TEXT_FILENAMES = new Set([
   "requirements.txt","SKILL.md","skill.md","Dockerfile","Makefile",
   "package.json","pyproject.toml","setup.py","skill.json","mcp.json",
+  "package-lock.json","yarn.lock","pnpm-lock.yaml","poetry.lock","go.sum","Gemfile.lock",
 ])
 
 function getExt(path: string): string {
@@ -58,8 +64,37 @@ function headers(): HeadersInit {
   return h
 }
 
+function daysSince(iso: string | null | undefined): number {
+  if (!iso) return Number.POSITIVE_INFINITY
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return Number.POSITIVE_INFINITY
+  return Math.max(0, Math.round((Date.now() - then) / 86_400_000))
+}
+
+/** Parse a paginated count from the Link header (rel="last" page number). */
+function countFromLink(res: Response, fallback: number): { count: number; capped: boolean } {
+  const link = res.headers.get("link")
+  if (link) {
+    const m = link.match(/[?&]page=(\d+)>;\s*rel="last"/)
+    if (m) return { count: parseInt(m[1], 10), capped: false }
+  }
+  return { count: fallback, capped: false }
+}
+
+async function safeCount(url: string): Promise<{ count: number; capped: boolean }> {
+  try {
+    const res = await fetch(url, { headers: headers(), cache: "no-store" })
+    if (!res.ok) return { count: 0, capped: true }
+    const data = (await res.json()) as unknown[]
+    const fallback = Array.isArray(data) ? data.length : 0
+    return countFromLink(res, fallback)
+  } catch {
+    return { count: 0, capped: true }
+  }
+}
+
 export async function fetchRepo(owner: string, repo: string): Promise<RepoInfo> {
-  // 1. Resolve default branch.
+  // 1. Resolve repository metadata.
   const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
     headers: headers(),
     cache: "no-store",
@@ -78,14 +113,21 @@ export async function fetchRepo(owner: string, repo: string): Promise<RepoInfo> 
   if (!treeRes.ok) throw new Error(`Could not read repository tree (${treeRes.status}).`)
   const treeData = await treeRes.json()
   const tree: Array<{ path: string; type: string; size?: number }> = treeData.tree ?? []
+  const allPaths = tree.filter((n) => n.type === "blob").map((n) => n.path)
 
-  const candidates = tree
-    .filter((n) => n.type === "blob" && isScannable(n.path) && (n.size ?? 0) <= MAX_FILE_BYTES)
-    .slice(0, MAX_FILES)
+  const scannableAll = tree.filter(
+    (n) => n.type === "blob" && isScannable(n.path) && (n.size ?? 0) <= MAX_FILE_BYTES,
+  )
+  const candidates = scannableAll.slice(0, MAX_FILES)
+  const truncated = Boolean(treeData.truncated) || candidates.length < scannableAll.length
 
-  const truncated = Boolean(treeData.truncated) || candidates.length < tree.filter((n) => n.type === "blob" && isScannable(n.path)).length
+  // 3. Fetch contributor + release counts in parallel (cheap, paginated).
+  const [contrib, releases] = await Promise.all([
+    safeCount(`https://api.github.com/repos/${owner}/${repo}/contributors?per_page=1&anon=true`),
+    safeCount(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=1`),
+  ])
 
-  // 3. Fetch raw contents in parallel (bounded).
+  // 4. Fetch raw contents in parallel (bounded).
   const files: RepoFile[] = []
   const concurrency = 12
   for (let i = 0; i < candidates.length; i += concurrency) {
@@ -108,5 +150,28 @@ export async function fetchRepo(owner: string, repo: string): Promise<RepoInfo> 
     throw new Error("No scannable text files were found in this repository.")
   }
 
-  return { owner, repo, branch, files, truncated }
+  const meta: RepoMeta = {
+    owner,
+    repo,
+    branch,
+    ownerType: repoData.owner?.type ?? "User",
+    description: repoData.description ?? null,
+    homepage: repoData.homepage || null,
+    license: repoData.license?.spdx_id && repoData.license.spdx_id !== "NOASSERTION"
+      ? repoData.license.spdx_id
+      : repoData.license?.name ?? null,
+    stars: repoData.stargazers_count ?? 0,
+    forks: repoData.forks_count ?? 0,
+    watchers: repoData.subscribers_count ?? repoData.watchers_count ?? 0,
+    openIssues: repoData.open_issues_count ?? 0,
+    archived: Boolean(repoData.archived),
+    ageDays: daysSince(repoData.created_at),
+    lastPushDays: daysSince(repoData.pushed_at ?? repoData.updated_at),
+    contributors: contrib.count,
+    contributorsCapped: contrib.capped,
+    releases: releases.count,
+    topics: Array.isArray(repoData.topics) ? repoData.topics : [],
+  }
+
+  return { owner, repo, branch, files, allPaths, meta, truncated }
 }

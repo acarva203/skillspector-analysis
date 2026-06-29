@@ -114,9 +114,10 @@ export function Scanner() {
       {loading && (
         <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-3 rounded-xl border border-border bg-card px-6 py-12 text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
-          <p className="text-sm font-medium text-foreground">Running static analysis…</p>
+          <p className="text-sm font-medium text-foreground">Gathering trust signals…</p>
           <p className="text-xs text-muted-foreground">
-            Fetching the repository tree and matching 64 vulnerability patterns.
+            Reading repository metadata, maintenance history, supply-chain and permission signals,
+            and matching 64 vulnerability patterns.
           </p>
         </div>
       )}

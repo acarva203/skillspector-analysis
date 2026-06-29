@@ -1,12 +1,14 @@
 "use client"
 
 import { AlertTriangle, CheckCircle2, FileCode, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react"
-import type { ScanResult } from "@/lib/skillspector/types"
-import { recommendationTone, SEVERITY_ORDER, severityClasses } from "@/lib/skillspector/ui"
+import type { ScanResult, TrustAssessment } from "@/lib/skillspector/types"
+import { recommendationTone, SEVERITY_ORDER, severityClasses, toneVar } from "@/lib/skillspector/ui"
 import { ScoreGauge } from "./score-gauge"
 import { FindingsList } from "./findings-list"
+import { TrustReport } from "./trust-report"
 
 export interface ScanResponse extends ScanResult {
+  trust: TrustAssessment
   branch: string
   truncated: boolean
 }
@@ -32,12 +34,27 @@ export function ResultReport({ result }: { result: ScanResponse }) {
     tone === "safe" ? "bg-safe/10 border-safe/30" : tone === "caution" ? "bg-caution/10 border-caution/30" : "bg-danger/10 border-danger/30"
 
   return (
-    <section className="mx-auto w-full max-w-5xl">
+    <div className="flex flex-col gap-14">
+      {/* Trust assessment — the headline */}
+      <TrustReport trust={result.trust} />
+
+      <section className="mx-auto w-full max-w-5xl">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          Static vulnerability scan
+        </span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
       {/* Summary card */}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col items-center gap-6 sm:flex-row">
-            <ScoreGauge score={result.score} recommendation={result.recommendation} />
+            <ScoreGauge
+              score={result.score}
+              color={toneVar[recommendationTone(result.recommendation)]}
+              label="Risk Score"
+            />
             <div className="text-center sm:text-left">
               <p className="font-mono text-sm text-muted-foreground">{result.source}</p>
               <h2 className="mt-1 text-2xl font-semibold text-foreground">{result.skill}</h2>
@@ -141,6 +158,7 @@ export function ResultReport({ result }: { result: ScanResponse }) {
           </div>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
   )
 }

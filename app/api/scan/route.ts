@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { fetchRepo, parseRepoUrl } from "@/lib/skillspector/github"
 import { scanFiles } from "@/lib/skillspector/engine"
+import { assessTrust } from "@/lib/skillspector/trust"
 
 export const maxDuration = 60
 
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest) {
   try {
     const repo = await fetchRepo(parsed.owner, parsed.repo)
     const result = scanFiles(repo.files, `${repo.owner}/${repo.repo}`, `github.com/${repo.owner}/${repo.repo}`)
-    return NextResponse.json({ ...result, branch: repo.branch, truncated: repo.truncated })
+    const trust = assessTrust(repo.meta, repo.files, repo.allPaths, result.findings, repo.truncated)
+    return NextResponse.json({ ...result, trust, branch: repo.branch, truncated: repo.truncated })
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to scan repository."
     return NextResponse.json({ error: message }, { status: 502 })

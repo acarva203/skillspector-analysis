@@ -48,3 +48,64 @@ export interface ScanResult {
   categoryCounts: Record<string, number>
   severityCounts: Record<Severity, number>
 }
+
+/* ----------------------- Trust assessment ----------------------- */
+
+export type Confidence = "HIGH" | "MEDIUM" | "LOW"
+
+export interface Evidence {
+  /** true = supports trust, false = detracts from trust */
+  positive: boolean
+  text: string
+}
+
+export interface TrustDimension {
+  key: string
+  label: string
+  /** 0-100, higher = more trustworthy */
+  score: number
+  description: string
+  evidence: Evidence[]
+}
+
+export interface Capability {
+  key: string
+  label: string
+  /** 0-100 intensity of this capability in the codebase */
+  level: number
+  files: number
+}
+
+export interface RepoMeta {
+  owner: string
+  repo: string
+  branch: string
+  ownerType: string
+  description: string | null
+  homepage: string | null
+  license: string | null
+  stars: number
+  forks: number
+  watchers: number
+  openIssues: number
+  archived: boolean
+  ageDays: number
+  lastPushDays: number
+  contributors: number
+  contributorsCapped: boolean
+  releases: number
+  topics: string[]
+}
+
+export interface TrustAssessment {
+  /** 0-100 overall, higher = more evidence the repo deserves trust */
+  trustScore: number
+  confidence: Confidence
+  confidenceReason: string
+  summary: string
+  dimensions: TrustDimension[]
+  capabilities: Capability[]
+  /** Top-level explainable "why" bullets, risks first */
+  reasons: Evidence[]
+  meta: RepoMeta
+}
