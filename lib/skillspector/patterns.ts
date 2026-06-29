@@ -67,6 +67,48 @@ export const PATTERNS: PatternDef[] = [
     ],
   },
 
+  // ---------- Anti-Refusal ----------
+  {
+    id: "AR1",
+    name: "Refusal Suppression",
+    category: "Anti-Refusal",
+    severity: "HIGH",
+    description: "Instructions that prevent the model from refusing requests.",
+    patterns: [
+      /never\s+refuse\s+(a\s+)?(request|query|task|command|instruction)/i,
+      /\b(cannot|must not|should not|do not)\s+(decline|refuse|reject|say no to)\b/i,
+      /must\s+(always\s+)?(comply|obey|follow|execute)\s+(with\s+)?(all|any|every)\b/i,
+      /you\s+(are\s+)?(required|obligated|forced)\s+to\s+(comply|obey|follow)/i,
+    ],
+  },
+  {
+    id: "AR2",
+    name: "Disclaimer Suppression",
+    category: "Anti-Refusal",
+    severity: "MEDIUM",
+    description: "Instructions that suppress safety warnings or disclaimers.",
+    patterns: [
+      /never\s+(add|include|show|display|output|append)\s+(a\s+)?(disclaimer|warning|caveat|note|caution)/i,
+      /without\s+(any\s+)?(warnings?|disclaimers?|caveats?|qualifications?)/i,
+      /do\s+not\s+(add|include|mention|output)\s+(any\s+)?(warnings?|disclaimers?|safety\s+notes?)/i,
+      /omit\s+(all\s+)?(safety\s+)?(warnings?|disclaimers?|caveats?)/i,
+    ],
+  },
+  {
+    id: "AR3",
+    name: "Safety Policy Nullification",
+    category: "Anti-Refusal",
+    severity: "CRITICAL",
+    description: "Instructions that nullify safety policies or content guidelines.",
+    patterns: [
+      /ignore\s+(all\s+)?(safety|content|ethical|usage)\s+(guidelines?|policies?|rules?|restrictions?|constraints?)/i,
+      /bypass\s+(content|safety|ethical)\s+(filter|policy|guideline|restriction|check)/i,
+      /disable\s+(your\s+)?(safety|content|ethical)\s+(check|filter|guard|mode|policy)/i,
+      /you\s+(have\s+no|don't\s+have\s+any|have\s+zero)\s+(restrictions?|limitations?|guidelines?|rules?)/i,
+      /act\s+as\s+if\s+(you\s+have\s+no|there\s+(are|were)\s+no)\s+(rules?|restrictions?|guidelines?)/i,
+    ],
+  },
+
   // ---------- Data Exfiltration ----------
   {
     id: "E1",
@@ -211,9 +253,14 @@ export const PATTERNS: PatternDef[] = [
     name: "Typosquatting",
     category: "Supply Chain",
     severity: "HIGH",
-    description: "Package names similar to popular packages.",
-    patterns: [],
-    extensions: ["txt"],
+    description: "Package name matches a known typosquat of a popular library.",
+    patterns: [
+      // Known PyPI typosquats (documented malicious packages)
+      /^(colourama|urlib3|reqeusts|python-dateutils|matplotlb|cryptograpy|setup-tools|python-jwt|distrib|djano|diango|scikit-learns?)\b/im,
+      // Known npm typosquats
+      /"(crossenv|loadash|mongose|expres|babelcli|cros-env|reac-dom|lodahs|create-react-app-js|discordi?js-)"/i,
+    ],
+    extensions: ["txt", "json"],
   },
 
   // ---------- Excessive Agency ----------

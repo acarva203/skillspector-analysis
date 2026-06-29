@@ -3,19 +3,29 @@
 import { useState } from "react"
 import { ChevronDown } from "lucide-react"
 import type { Finding } from "@/lib/skillspector/types"
+import type { Verdict } from "@/lib/skillspector/llm"
 import { severityClasses } from "@/lib/skillspector/ui"
 
-export function FindingsList({ findings }: { findings: Finding[] }) {
+interface Props {
+  findings: Finding[]
+  verdicts?: Map<string, Verdict>
+}
+
+export function FindingsList({ findings, verdicts }: Props) {
   return (
     <div className="flex flex-col gap-3">
       {findings.map((f, i) => (
-        <FindingRow key={`${f.id}-${f.file}-${i}`} finding={f} />
+        <FindingRow
+          key={`${f.id}-${f.file}-${i}`}
+          finding={f}
+          verdict={verdicts?.get(`${f.id}:${f.file}`)}
+        />
       ))}
     </div>
   )
 }
 
-function FindingRow({ finding }: { finding: Finding }) {
+function FindingRow({ finding, verdict }: { finding: Finding; verdict?: Verdict }) {
   const [open, setOpen] = useState(false)
   const sc = severityClasses[finding.severity]
 
@@ -41,9 +51,22 @@ function FindingRow({ finding }: { finding: Finding }) {
             {finding.file}:{finding.line}
           </span>
         </span>
-        <span className="hidden shrink-0 text-xs text-muted-foreground sm:block">
-          {finding.confidence}% confidence
-        </span>
+        {verdict && (
+          <span
+            className={`hidden shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium sm:inline-flex ${
+              verdict.verdict === "confirmed"
+                ? "border-danger/30 bg-danger/10 text-danger"
+                : "border-safe/30 bg-safe/10 text-safe"
+            }`}
+          >
+            {verdict.verdict === "confirmed" ? "Confirmed" : "Likely false positive"}
+          </span>
+        )}
+        {!verdict && (
+          <span className="hidden shrink-0 text-xs text-muted-foreground sm:block">
+            {finding.confidence}% confidence
+          </span>
+        )}
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
           aria-hidden="true"
@@ -56,6 +79,11 @@ function FindingRow({ finding }: { finding: Finding }) {
             {finding.category}
           </p>
           <p className="mt-1.5 text-sm text-foreground">{finding.description}</p>
+          {verdict && (
+            <p className="mt-2 text-sm italic text-muted-foreground">
+              AI: {verdict.note}
+            </p>
+          )}
           <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Matched code
           </p>

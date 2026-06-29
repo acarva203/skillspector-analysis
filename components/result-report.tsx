@@ -3,6 +3,11 @@
 import { AlertTriangle, CheckCircle2, FileCode, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react"
 import type { ScanResult, TrustAssessment } from "@/lib/skillspector/types"
 import { recommendationTone, SEVERITY_ORDER, severityClasses, toneVar } from "@/lib/skillspector/ui"
+import { useEffect, useState } from "react"
+import { AlertTriangle, BrainCircuit, CheckCircle2, FileCode, Loader2, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react"
+import type { ScanResult } from "@/lib/skillspector/types"
+import type { EnhancementResult, Verdict } from "@/lib/skillspector/llm"
+import { recommendationTone, SEVERITY_ORDER, severityClasses } from "@/lib/skillspector/ui"
 import { ScoreGauge } from "./score-gauge"
 import { FindingsList } from "./findings-list"
 import { TrustReport } from "./trust-report"
@@ -12,6 +17,12 @@ export interface ScanResponse extends ScanResult {
   branch: string
   truncated: boolean
 }
+
+type EnhancementState =
+  | { status: "loading" }
+  | { status: "done"; summary: string; verdicts: Map<string, Verdict> }
+  | { status: "unavailable" }
+  | { status: "error" }
 
 const recIcon = {
   safe: ShieldCheck,
@@ -31,7 +42,36 @@ export function ResultReport({ result }: { result: ScanResponse }) {
   const toneText =
     tone === "safe" ? "text-safe" : tone === "caution" ? "text-caution" : "text-danger"
   const toneBg =
-    tone === "safe" ? "bg-safe/10 border-safe/30" : tone === "caution" ? "bg-caution/10 border-caution/30" : "bg-danger/10 border-danger/30"
+    tone === "safe"
+      ? "bg-safe/10 border-safe/30"
+      : tone === "caution"
+        ? "bg-caution/10 border-caution/30"
+        : "bg-danger/10 border-danger/30"
+
+  const [enhancement, setEnhancement] = useState<EnhancementState | null>(null)
+
+  useEffect(() => {
+    if (result.findings.length === 0) return
+    setEnhancement({ status: "loading" })
+
+    fetch("/api/scan/enhance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ result }),
+    })
+      .then(async (res) => {
+        if (res.status === 503) { setEnhancement({ status: "unavailable" }); return }
+        if (!res.ok) { setEnhancement({ status: "error" }); return }
+        const data: EnhancementResult = await res.json()
+        const verdicts = new Map(data.verdicts.map((v) => [`${v.id}:${v.file}`, v]))
+        setEnhancement({ status: "done", summary: data.summary, verdicts })
+      })
+      .catch(() => setEnhancement({ status: "error" }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result.skill, result.scannedAt])
+
+  const verdicts =
+    enhancement?.status === "done" ? enhancement.verdicts : new Map<string, Verdict>()
 
   return (
     <div className="flex flex-col gap-14">
@@ -100,6 +140,30 @@ export function ResultReport({ result }: { result: ScanResponse }) {
         )}
       </div>
 
+      {/* AI analysis panel */}
+      {enhancement && enhancement.status !== "unavailable" && (
+        <div className="mt-6 overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+            <BrainCircuit className="h-4 w-4 text-primary" aria-hidden="true" />
+            <span className="text-sm font-medium text-foreground">AI Analysis</span>
+            {enhancement.status === "loading" && (
+              <Loader2 className="ml-1 h-3.5 w-3.5 animate-spin text-muted-foreground" aria-hidden="true" />
+            )}
+          </div>
+          <div className="px-4 py-3">
+            {enhancement.status === "loading" && (
+              <p className="text-sm text-muted-foreground">Reviewing findings for false positives…</p>
+            )}
+            {enhancement.status === "done" && (
+              <p className="text-sm leading-relaxed text-foreground">{enhancement.summary}</p>
+            )}
+            {enhancement.status === "error" && (
+              <p className="text-sm text-muted-foreground">AI analysis unavailable — static results above are unaffected.</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Findings */}
       <div className="mt-8">
         <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
@@ -111,12 +175,12 @@ export function ResultReport({ result }: { result: ScanResponse }) {
             <CheckCircle2 className="h-10 w-10 text-safe" aria-hidden="true" />
             <p className="text-base font-medium text-foreground">No vulnerability patterns detected</p>
             <p className="max-w-md text-sm text-muted-foreground">
-              The static analyzer found no matches across its 64 patterns. This does not guarantee
+              The static analyzer found no matches across its 67 patterns. This does not guarantee
               safety — always review skills before installing.
             </p>
           </div>
         ) : (
-          <FindingsList findings={result.findings} />
+          <FindingsList findings={result.findings} verdicts={verdicts} />
         )}
       </div>
 
