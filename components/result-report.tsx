@@ -1,13 +1,10 @@
 "use client"
 
-import { AlertTriangle, CheckCircle2, FileCode, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react"
 import type { ScanResult, TrustAssessment } from "@/lib/skillspector/types"
 import { recommendationTone, SEVERITY_ORDER, severityClasses, toneVar } from "@/lib/skillspector/ui"
 import { useEffect, useState } from "react"
 import { AlertTriangle, BrainCircuit, CheckCircle2, FileCode, Loader2, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react"
-import type { ScanResult } from "@/lib/skillspector/types"
 import type { EnhancementResult, Verdict } from "@/lib/skillspector/llm"
-import { recommendationTone, SEVERITY_ORDER, severityClasses } from "@/lib/skillspector/ui"
 import { ScoreGauge } from "./score-gauge"
 import { FindingsList } from "./findings-list"
 import { TrustReport } from "./trust-report"
