@@ -1,5 +1,5 @@
-import { Shield } from "lucide-react"
 import { Scanner } from "@/components/scanner"
+import { Header } from "@/components/header"
 
 const DIMENSIONS = [
   { title: "Maintenance", desc: "Age, activity, releases, and contributor count." },
@@ -33,24 +33,7 @@ const CATEGORIES = [
 export default function Page() {
   return (
     <main className="min-h-dvh">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" aria-hidden="true" />
-            <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
-              SkillSpector
-            </span>
-          </div>
-          <a
-            href="https://github.com/NVIDIA/SkillSpector"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Engine by NVIDIA ↗
-          </a>
-        </div>
-      </header>
+      <Header />
 
       <div className="mx-auto max-w-5xl px-4 py-16 sm:py-24">
         <section className="mx-auto max-w-2xl text-center">
