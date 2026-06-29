@@ -52,7 +52,9 @@ export async function POST(req: NextRequest) {
       result.categoryCounts = categoryCounts
     }
 
-    return NextResponse.json({ ...result, branch: repo.branch, truncated: repo.truncated })
+    const trust = assessTrust(repo.meta, repo.files, repo.allPaths, result.findings, repo.truncated)
+
+    return NextResponse.json({ ...result, branch: repo.branch, truncated: repo.truncated, trust })
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to scan repository."
     return NextResponse.json({ error: message }, { status: 502 })
