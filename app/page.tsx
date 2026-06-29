@@ -112,7 +112,9 @@ export default function Page() {
           >
             NVIDIA/SkillSpector
           </a>
-. Inspired by Trail of Bits&apos; observation that repository scanning is a trust signal, not a
+. Inspired by <a href="https://blog.trailofbits.com/2026/06/03/the-sorry-state-of-skill-distribution/" target="_blank"
+            rel="noopener noreferrer"
+            className="text-foreground underline-offset-4 hover:underline">Trail of Bits</a>&apos; observation that repository scanning is a trust signal, not a
           guarantee — findings are heuristic and evidence-based, so always review skills before
           installing.
         </div>
