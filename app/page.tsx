@@ -1,6 +1,15 @@
 import { Shield } from "lucide-react"
 import { Scanner } from "@/components/scanner"
 
+const DIMENSIONS = [
+  { title: "Maintenance", desc: "Age, activity, releases, and contributor count." },
+  { title: "Supply chain", desc: "Pinned deps, lockfiles, install scripts, remote fetches." },
+  { title: "Security hygiene", desc: "CI, CodeQL, Dependabot, security policy, tests." },
+  { title: "Engineering quality", desc: "Docs, tests, changelog, community adoption." },
+  { title: "Permission safety", desc: "Shell, filesystem, network, and secrets access." },
+  { title: "Transparency", desc: "License, provenance, and absence of obfuscation." },
+]
+
 const CATEGORIES = [
   "Prompt Injection",
   "Anti-Refusal",
@@ -50,12 +59,12 @@ export default function Page() {
             Static analysis · 67 patterns · 17 categories
           </span>
           <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            Is this AI agent skill safe to install?
+            How much can you trust this repository?
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-pretty leading-relaxed text-muted-foreground">
-            Paste a public GitHub repository and SkillSpector scans it for prompt injection, data
-            exfiltration, dangerous code, supply-chain risks and more — then returns a 0–100 risk
-            score with a clear recommendation.
+            Scanners are a trust signal, not a guarantee. Paste a public GitHub repo and SkillSpector
+            weighs maintenance, provenance, supply-chain and permission signals — alongside 64
+            vulnerability patterns — into an explainable trust score with a separate confidence level.
           </p>
         </section>
 
@@ -65,7 +74,19 @@ export default function Page() {
 
         <section className="mt-24">
           <h2 className="text-center text-sm font-medium uppercase tracking-widest text-muted-foreground">
-            What gets analyzed
+            Trust dimensions
+          </h2>
+          <ul className="mx-auto mt-6 grid max-w-3xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {DIMENSIONS.map((d) => (
+              <li key={d.title} className="rounded-lg border border-border bg-card p-4">
+                <p className="text-sm font-medium text-foreground">{d.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{d.desc}</p>
+              </li>
+            ))}
+          </ul>
+
+          <h2 className="mt-16 text-center text-sm font-medium uppercase tracking-widest text-muted-foreground">
+            Vulnerability patterns
           </h2>
           <ul className="mx-auto mt-6 flex max-w-3xl flex-wrap justify-center gap-2">
             {CATEGORIES.map((c) => (
@@ -91,7 +112,8 @@ export default function Page() {
           >
             NVIDIA/SkillSpector
           </a>
-          . Findings are heuristic and may include false positives — always review skills before
+. Inspired by Trail of Bits&apos; observation that repository scanning is a trust signal, not a
+          guarantee — findings are heuristic and evidence-based, so always review skills before
           installing.
         </div>
       </footer>

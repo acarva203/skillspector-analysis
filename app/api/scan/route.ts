@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { fetchRepo, parseRepoUrl } from "@/lib/skillspector/github"
+import { scanFiles } from "@/lib/skillspector/engine"
+import { assessTrust } from "@/lib/skillspector/trust"
 import { scanFiles, computeScore } from "@/lib/skillspector/engine"
 import { checkDependencies } from "@/lib/skillspector/dependencies"
 import type { Severity } from "@/lib/skillspector/types"

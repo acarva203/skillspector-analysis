@@ -1,9 +1,40 @@
-import type { Recommendation, Severity } from "./types"
+import type { Confidence, Recommendation, Severity } from "./types"
 
 export function recommendationTone(rec: Recommendation): "safe" | "caution" | "danger" {
   if (rec === "SAFE") return "safe"
   if (rec === "CAUTION") return "caution"
   return "danger"
+}
+
+/** Trust is "higher = better": invert the tone bands relative to risk. */
+export function trustTone(score: number): "safe" | "caution" | "danger" {
+  if (score >= 70) return "safe"
+  if (score >= 45) return "caution"
+  return "danger"
+}
+
+export const toneVar: Record<"safe" | "caution" | "danger", string> = {
+  safe: "var(--safe)",
+  caution: "var(--caution)",
+  danger: "var(--danger)",
+}
+
+export const toneText: Record<"safe" | "caution" | "danger", string> = {
+  safe: "text-safe",
+  caution: "text-caution",
+  danger: "text-danger",
+}
+
+export const toneBarBg: Record<"safe" | "caution" | "danger", string> = {
+  safe: "bg-safe",
+  caution: "bg-caution",
+  danger: "bg-danger",
+}
+
+export const confidenceTone: Record<Confidence, "safe" | "caution" | "danger"> = {
+  HIGH: "safe",
+  MEDIUM: "caution",
+  LOW: "danger",
 }
 
 export const severityClasses: Record<
